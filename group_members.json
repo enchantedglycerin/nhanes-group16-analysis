@@ -1,0 +1,22 @@
+{
+  "group_number": 16,
+  "contribution_status": "assigned_roles",
+  "members": [
+    {
+      "name": "ธนาพัทธ์ จันทร์ธีร",
+      "work_package": "inference"
+    },
+    {
+      "name": "จิรเดช ศรีโนนยาง",
+      "work_package": "data"
+    },
+    {
+      "name": "วีรภาพ คืนดี",
+      "work_package": "literature"
+    },
+    {
+      "name": "ณัฐพัชร์ ทัศนะเมธี",
+      "work_package": "descriptive"
+    }
+  ]
+}

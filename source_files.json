@@ -1,0 +1,26 @@
+[
+  ".gitattributes",
+  ".gitignore",
+  "ANALYSIS_PLAN.md",
+  "README.md",
+  "data/README.md",
+  "group_members.json",
+  "publish.ps1",
+  "requirements-analysis.txt",
+  "requirements.txt",
+  "run.py",
+  "source_files.json",
+  "tools/analyze.py",
+  "tools/build_reports.py",
+  "tools/check_reports.py",
+  "tools/data_utils.py",
+  "tools/make_figures.py",
+  "tools/package_reports.py",
+  "tools/plotting.py",
+  "tools/report_io.py",
+  "tools/segment_thai.mjs",
+  "tools/stats_core.py",
+  "tools/thai_report_io.py",
+  "tools/verify_analysis.py"
+]
+

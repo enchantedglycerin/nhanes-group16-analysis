@@ -1,0 +1,5 @@
+-r requirements-analysis.txt
+wxPython==4.2.2
+PyMuPDF==1.28.2
+Pillow==12.3.0
+
