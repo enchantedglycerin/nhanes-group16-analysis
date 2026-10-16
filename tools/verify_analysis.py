@@ -13,6 +13,67 @@ def check(label,value):
     assert value,label
     checks.append(label)
 
+def assumption_checks(tag,r,z,rows,residual,q):
+    normality=r['assumptions']['normality']
+    samples=[z['group_0'],z['group_1'],residual]
+    if 'spearman' in r:samples.extend([z['x'],z['y']])
+    check(tag+'normality covers both groups, residuals and correlation inputs',
+          len(normality)==len(samples) and all(v['n']>2000 for v in normality.values()))
+    for (label,record),values in zip(normality.items(),samples):
+        # Independent summation and the closed-form chi-square(2) survival.
+        values=list(map(float,values));n=len(values);mean=math.fsum(values)/n
+        moments={k:math.fsum((v-mean)**k for v in values)/n for k in [2,3,4]}
+        skew=moments[3]/moments[2]**1.5;excess=moments[4]/moments[2]**2-3
+        jb=n*(skew*skew/6+excess*excess/24)
+        check(tag+label+' independently summed normality statistic',
+              record['n']==n and record['df']==2 and math.isclose(jb,record['statistic'],rel_tol=1e-9)
+              and math.isclose(skew,record['skewness'],abs_tol=1e-9)
+              and math.isclose(excess,record['excess_kurtosis'],abs_tol=1e-9))
+        expected_p=mp.exp(-mp.mpf(jb)/2)
+        check(tag+label+' normality p from exponential survival',
+              abs(mp.mpf(record['p'])/expected_p-1)<mp.mpf('1e-7'))
+    deviations=[np.abs(values-np.median(values)) for values in samples[:2]]
+    grand=math.fsum(float(v) for group in deviations for v in group)/sum(map(len,deviations))
+    between=sum(len(group)*(group.mean()-grand)**2 for group in deviations)
+    within=sum(math.fsum(float(v-group.mean())**2 for v in group) for group in deviations)
+    df=sum(map(len,deviations))-2;statistic=between/(within/df);bf=r['brown_forsythe']
+    check(tag+'Brown-Forsythe via absolute-deviation ANOVA',
+          bf['df1']==1 and bf['df2']==df and math.isclose(statistic,bf['F'],rel_tol=1e-10)
+          and math.isclose(float(S.t_p(math.sqrt(statistic),df)),float(bf['p']),rel_tol=1e-9))
+    squared=residual**2;fitted=q@(q.T@squared)
+    lm=len(squared)*(1-float(np.sum((squared-fitted)**2)/np.sum((squared-squared.mean())**2)))
+    check(tag+'Koenker diagnostic from independent QR auxiliary regression',
+          math.isclose(lm,r['adjusted']['diagnostics']['koenker_LM'],abs_tol=1e-7))
+    if r['variant']==1:
+        group_rows=[row for row in rows if row['mean_pulse_bpm'] and row['sedentary_minutes_day']]
+        groups=[[row for row in group_rows if (float(row['sedentary_minutes_day'])<480)==low] for low in [True,False]]
+        pair_rows=group_rows
+    else:
+        column='haemoglobin_g_dl' if r['variant']==2 else 'arm_circumference_cm'
+        group_rows=[row for row in rows if row[column] and row['sex'] and (r['variant']==3 or row['age_years'])]
+        groups=[[row for row in group_rows if row['sex']==sex] for sex in ['Female','Male']]
+        pair_rows=[row for row in rows if row['arm_circumference_cm'] and row['weight_kg']]
+    audit=r['assumptions']['independence'];ids=[{row['participant_id'] for row in group} for group in groups]
+    expected_samples={'Source dataset':rows,'Group comparison':group_rows,
+                      'Primary regression':[row for row in rows if all(row[c] for c in r['missingness'])]}
+    if 'spearman' in r:expected_samples['Spearman complete pairs']=pair_rows
+    check(tag+'independence audit reconciles all raw-data sample IDs',
+          audit['samples']=={name:{'records':len(sample),'unique_ids':len({row['participant_id'] for row in sample})}
+                             for name,sample in expected_samples.items()})
+    check(tag+'unpaired group IDs are disjoint and counted once',
+          audit['overlapping_group_ids']==len(ids[0]&ids[1])==0
+          and list(audit['group_unique_ids'].values())==list(map(len,ids))
+          and all(len(group)==len(unique) for group,unique in zip(groups,ids)))
+    design=[c for c in rows[0] if any(term in c.lower() for term in ['psu','strat','cluster','household'])]
+    check(tag+'survey independence is explicitly unverified',
+          audit['available_cluster_or_stratum_columns']==design==[]
+          and audit['survey_independence_verified'] is False)
+    selection=r['assumptions']['method_selection']
+    check(tag+'one correlation method and unchanged mean-difference estimand',
+          selection['bivariate_correlation']==('Spearman only' if 'spearman' in r else 'Not part of the research questions')
+          and selection['group_comparison'].startswith('Welch t-test:')
+          and selection['normality_pretest_switching'] is False and 'pearson' not in r)
+
 def main():
     source=ROOT/'data'/'NHANES_BME_student - NHANES_BME_student.csv'
     check('Original participant CSV unchanged',hashlib.sha256(source.read_bytes()).hexdigest()=='ee2bd4d6bccb4860967fbb1cf7d4af510a5ebfddd4911fe6d0cd155738cd8c09')
@@ -76,9 +137,10 @@ def main():
             running=min(mp.mpf(1),max(running,(3-j)*p[k]));expected_holm[k]=running
         check(tag+'Holm adjustment including tiny tails',all(abs(mp.mpf(t['holm_p'])/expected_holm[i]-1)<mp.mpf('1e-10') for i,t in enumerate(r['primary_tests'])))
         check(tag+'analysis plan matches result provenance',r['plan_sha256']==hashlib.sha256((ROOT/'ANALYSIS_PLAN.md').read_bytes()).hexdigest())
+        assumption_checks(tag,r,z,rows,residual,q)
         summaries.append({'variant':folder.name,'questions':r['config']['questions'],'n':len(y),'result_sha256':hashlib.sha256((folder/'results.json').read_bytes()).hexdigest()})
-    output={'passed':len(checks),'checks':checks,'reports':summaries,'independent_checks':'QR, actual leave-one-out refits, HC3 deletion identity, raw CSV reconciliation.'}
-    assert len(summaries)==3 and len(checks)==51
+    output={'passed':len(checks),'checks':checks,'reports':summaries,'independent_checks':'QR, actual leave-one-out refits, HC3 deletion identity, raw CSV reconciliation, independently summed normality moments, exponential chi-square(2) survival, absolute-deviation ANOVA and ID overlap audits.'}
+    assert len(summaries)==3 and len(checks)==98
     (ROOT/'outputs').mkdir(exist_ok=True)
     (ROOT/'outputs'/'numerical_validation.json').write_text(json.dumps(output,ensure_ascii=False,indent=2),encoding='utf-8')
     print(f'PASS: {len(checks)} numerical, data and topic checks.')

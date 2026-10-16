@@ -21,7 +21,7 @@ def main():
     numerical = json.loads((ROOT / 'outputs/numerical_validation.json').read_text(encoding='utf-8'))
     documents = json.loads((ROOT / 'outputs/report_validation.json').read_text(encoding='utf-8'))
     figures = json.loads((ROOT / 'outputs/figure_checks.json').read_text(encoding='utf-8'))
-    assert numerical['passed'] == 51
+    assert numerical['passed'] == 98
     assert [r['variant'] for r in numerical['reports']] == list(REPORTS)
     assert [r['variant'] for r in documents] == list(REPORTS)
     assert [r['variant'] for r in figures] == list(REPORTS)
@@ -34,6 +34,9 @@ def main():
         report = documents[index]
         assert report['group_number'] == 16 and report['document_status'] == 'final'
         assert report['no_placeholders'] and report['no_build_instructions_in_report']
+        assert report['reference_style']=='Vancouver' and report['citations_in_first_appearance_order']
+        assert report['table_captions_above_and_figure_captions_below'] and report['no_internal_graph_titles']
+        assert 0<report['main_words']<=2500 and report['axis_label_pt']==10
         assert digest(folder / 'results.json') == report['result_sha256'] == numerical['reports'][index]['result_sha256']
         for extension in ['pdf', 'docx']:
             target = dest / f'{base}.{extension}'
@@ -47,7 +50,13 @@ def main():
         files.append(ROOT / 'outputs' / name)
     reproduction = ROOT / 'outputs/reproduction_validation.json'
     if reproduction.exists():
+        preserved=json.loads(reproduction.read_text(encoding='utf-8'))
+        assert [entry['result_sha256'] for entry in preserved['reports']]==[entry['result_sha256'] for entry in documents]
         files.append(reproduction)
+    references=ROOT / 'outputs/reference_validation.json'
+    if references.exists():
+        assert json.loads(references.read_text(encoding='utf-8'))['catalog_sha256']==digest(ROOT/'references.json')
+        files.append(references)
     files = sorted(set(files))
     assert all(p.is_file() and p.resolve().is_relative_to(ROOT.resolve()) for p in files)
     manifest = {p.relative_to(ROOT).as_posix(): digest(p) for p in files}

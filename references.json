@@ -1,0 +1,90 @@
+{
+  "cdc": {
+    "type": "web", "author": "National Center for Health Statistics",
+    "title": "Brief overview of sample design, nonresponse bias assessment, and analytic guidelines for NHANES August 2021-August 2023",
+    "url": "https://wwwn.cdc.gov/nchs/nhanes/continuousnhanes/OverviewBrief.aspx?Cycle=2021-2023"
+  },
+  "age": {
+    "type": "web", "author": "National Center for Health Statistics",
+    "title": "NHANES August 2021-August 2023: demographic variables and sample weights (DEMO_L)",
+    "url": "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/DEMO_L.htm"
+  },
+  "paq": {
+    "type": "web", "author": "National Center for Health Statistics",
+    "title": "NHANES August 2021-August 2023: physical activity (PAQ_L)",
+    "url": "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/PAQ_L.htm"
+  },
+  "bpxo": {
+    "type": "web", "author": "National Center for Health Statistics",
+    "title": "NHANES August 2021-August 2023: blood pressure - oscillometric measurements (BPXO_L)",
+    "url": "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/BPXO_L.htm"
+  },
+  "cbc": {
+    "type": "web", "author": "National Center for Health Statistics",
+    "title": "NHANES August 2021-August 2023: complete blood count with 5-part differential in whole blood (CBC_L)",
+    "url": "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/CBC_L.htm"
+  },
+  "bmx": {
+    "type": "web", "author": "National Center for Health Statistics",
+    "title": "NHANES August 2021-August 2023: body measures (BMX_L)",
+    "url": "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/BMX_L.htm"
+  },
+  "hc3": {
+    "type": "web", "author": "statsmodels developers",
+    "title": "statsmodels.regression.linear_model.OLSResults.HC3_se",
+    "url": "https://www.statsmodels.org/stable/generated/statsmodels.regression.linear_model.OLSResults.HC3_se.html"
+  },
+  "normality": {
+    "type": "web", "author": "SciPy developers",
+    "title": "scipy.stats.jarque_bera",
+    "url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.jarque_bera.html"
+  },
+  "welch": {
+    "type": "journal", "authors": ["Delacre M", "Lakens D", "Leys C"],
+    "title": "Why psychologists should by default use Welch’s t-test instead of Student’s t-test",
+    "journal": "Int Rev Soc Psychol", "year": "2017", "volume": "30", "issue": "1", "pages": "92-101",
+    "doi": "10.5334/irsp.82", "url": "https://doi.org/10.5334/irsp.82"
+  },
+  "large_samples": {
+    "type": "journal", "authors": ["Lumley T", "Diehr P", "Emerson S", "Chen L"],
+    "title": "The importance of the normality assumption in large public health data sets",
+    "journal": "Annu Rev Public Health", "year": "2002", "volume": "23", "issue": "1", "pages": "151-169",
+    "doi": "10.1146/annurev.publhealth.23.100901.140546", "url": "https://doi.org/10.1146/annurev.publhealth.23.100901.140546"
+  },
+  "beijer": {
+    "type": "journal", "authors": ["Beijer K", "Lampa E", "Sundström J", "Nilsson PM", "Elmståhl S", "Pedersen NL", "Lind L"],
+    "title": "Physical activity may compensate for prolonged TV time regarding pulse rate—a cross-sectional study",
+    "journal": "Ups J Med Sci", "year": "2018", "volume": "123", "issue": "4", "pages": "247-254",
+    "doi": "10.1080/03009734.2018.1540505", "url": "https://doi.org/10.1080/03009734.2018.1540505"
+  },
+  "mcgregor": {
+    "type": "journal", "authors": ["McGregor DE", "Carson V", "Palarea-Albaladejo J", "Dall PM", "Tremblay MS", "Chastin SFM"],
+    "title": "Compositional analysis of the associations between 24-h movement behaviours and health indicators among adults and older adults from the Canadian Health Measure Survey",
+    "journal": "Int J Environ Res Public Health", "year": "2018", "volume": "15", "issue": "8", "pages": "1779",
+    "doi": "10.3390/ijerph15081779", "url": "https://doi.org/10.3390/ijerph15081779"
+  },
+  "nah": {
+    "type": "journal", "authors": ["Nah EH", "Cho S", "Kim S", "Chu J", "Kwon E", "Cho HI"],
+    "title": "Distribution of hemoglobin levels and prevalence of anemia according to sex, age group, and region in 13 Korean cities",
+    "journal": "Int J Lab Hematol", "year": "2020", "volume": "42", "issue": "2", "pages": "223-229",
+    "doi": "10.1111/ijlh.13160", "url": "https://doi.org/10.1111/ijlh.13160"
+  },
+  "su": {
+    "type": "journal", "authors": ["Su F", "Cao L", "Ren X", "Hu J", "Tavengana G", "Wu H", "Zhou Y", "Fu Y", "Jiang M", "Wen Y"],
+    "title": "Age and sex trend differences in hemoglobin levels in China: a cross-sectional study",
+    "journal": "BMC Endocr Disord", "year": "2023", "volume": "23", "issue": "1", "pages": "8",
+    "doi": "10.1186/s12902-022-01218-w", "url": "https://doi.org/10.1186/s12902-022-01218-w"
+  },
+  "cattermole2017": {
+    "type": "journal", "authors": ["Cattermole GN", "Graham CA", "Rainer TH"],
+    "title": "Mid-arm circumference can be used to estimate weight of adult and adolescent patients",
+    "journal": "Emerg Med J", "year": "2017", "volume": "34", "issue": "4", "pages": "231-236",
+    "doi": "10.1136/emermed-2015-205623", "url": "https://doi.org/10.1136/emermed-2015-205623"
+  },
+  "cattermole2021": {
+    "type": "journal", "authors": ["Cattermole GN", "Wells M"],
+    "title": "Comparison of adult weight estimation methods for use during emergency medical care",
+    "journal": "J Am Coll Emerg Physicians Open", "year": "2021", "volume": "2", "issue": "4", "pages": "e12515",
+    "doi": "10.1002/emp2.12515", "url": "https://doi.org/10.1002/emp2.12515"
+  }
+}

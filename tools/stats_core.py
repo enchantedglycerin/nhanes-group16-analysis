@@ -70,6 +70,14 @@ def describe(values):
                 outlier_fence_count=int(np.sum((x<q1-1.5*(q3-q1))|(x>q3+1.5*(q3-q1)))))
 
 
+def jarque_bera(values):
+    """Large-sample normality diagnostic; all report samples exceed 2,000."""
+    d = describe(values)
+    statistic = d['n']/6*(d['skewness']**2+d['excess_kurtosis']**2/4)
+    return dict(n=d['n'],statistic=float(statistic),df=2,p=chi_p(statistic,2),
+                skewness=d['skewness'],excess_kurtosis=d['excess_kurtosis'])
+
+
 def ranks(x):
     x = np.asarray(x)
     order = np.argsort(x,kind='stable')

@@ -52,9 +52,28 @@ device; there is no independent prediction-validation dataset.
 - Brown–Forsythe, residual skewness, Koenker diagnostic and Cook's distance.
   Flagged observations stay in the analysis; independence is a working
   assumption because survey design information is absent.
+- Report Jarque–Bera normality tests separately for both comparison groups,
+  primary-model residuals and the continuous variables used for Spearman.
+  These samples exceed 2,000; use the asymptotic chi-square reference with 2 df.
+- Welch comparisons target mean differences. Retain large-sample mean inference
+  after assessing shape, group sizes and variance; do not automatically switch
+  estimands following a normality or equal-variance pretest. OLS-HC3 estimates
+  a linear mean summary, with the existing nonlinear sensitivity models.
+- Audit unique participant IDs for each analysis and zero overlap between
+  comparison groups. This checks record structure, not survey-cluster
+  independence. Household and PSU dependence cannot be verified from these CSVs.
+  Independence concerns observations, not absence of association between the
+  predictor and outcome. Do not report an independence p-value for an ID audit.
+- Use only Spearman for each unadjusted bivariate correlation; do not add
+  Pearson tests for the same pair. Assumption diagnostics remain outside the
+  three-question primary Holm family.
 - Paired bootstrap: 2,000 resamples; deterministic seeds 6101 and 6301.
 - Unweighted teaching-extract analyses, not nationally representative estimates.
 - Thai prose with English technical terms; group number 16 and four named
   members with assigned responsibilities.
 - At least two medical research comparisons and statistical references in each.
 - Main prose <=2,500 segmented words; conclusion 2–3 sentences.
+- Vancouver numbered references in first-citation order, with verified DOI or
+  original documentation links; table captions above and figure captions below.
+- Figures have no internal titles. At final printed size, axis labels are 10 pt
+  and tick labels 9.5 pt, compared with 10.5 pt main prose.

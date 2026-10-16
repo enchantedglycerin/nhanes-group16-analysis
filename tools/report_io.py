@@ -75,7 +75,8 @@ class Report:
             elif b['type']=='paragraph':paragraph(b['text'],'Caption' if b['style']=='caption' else None)
             elif b['type']=='break':el(el(el(body,'w:p'),'w:r'),'w:br',{'w:type':'page'})
             elif b['type']=='table':
-                paragraph(b['title'],'Caption')
+                caption=paragraph(b['title'],'Caption')
+                el(caption.find('{'+W+'}pPr'),'w:keepNext')
                 table=el(body,'w:tbl');pr=el(table,'w:tblPr')
                 el(pr,'w:tblStyle',{'w:val':'TableGrid'});el(pr,'w:tblW',{'w:w':'0','w:type':'auto'})
                 grid=el(table,'w:tblGrid')
@@ -93,8 +94,9 @@ class Report:
                 paragraph('')
             elif b['type']=='figure':
                 image_id=len(images)+1;rid=f'rIdImage{image_id}';images.append((rid,self.folder/b['filename']))
-                p=el(body,'w:p');drawing=el(el(p,'w:r'),'w:drawing');inline_node=el(drawing,'wp:inline',{'distT':0,'distB':0,'distL':0,'distR':0})
-                cx,cy=5943600,3566160
+                p=el(body,'w:p');el(el(p,'w:pPr'),'w:keepNext')
+                drawing=el(el(p,'w:r'),'w:drawing');inline_node=el(drawing,'wp:inline',{'distT':0,'distB':0,'distL':0,'distR':0})
+                cx,cy=493*12700,296*12700
                 el(inline_node,'wp:extent',{'cx':cx,'cy':cy});el(inline_node,'wp:docPr',{'id':image_id,'name':f'Figure {image_id}'})
                 graphic=el(inline_node,'a:graphic');gd=el(graphic,'a:graphicData',{'uri':PIC});pic=el(gd,'pic:pic')
                 nv=el(pic,'pic:nvPicPr');el(nv,'pic:cNvPr',{'id':image_id,'name':f'image{image_id}.png'});el(nv,'pic:cNvPicPr')
@@ -103,9 +105,9 @@ class Report:
                 el(el(props,'a:prstGeom',{'prst':'rect'}),'a:avLst')
                 paragraph(b['caption'],'Caption')
         section=el(body,'w:sectPr');el(section,'w:pgSz',{'w:w':11906,'w:h':16838})
-        el(section,'w:pgMar',{'w:top':1080,'w:bottom':1080,'w:left':1080,'w:right':1080,'w:header':360,'w:footer':360})
+        el(section,'w:pgMar',{'w:top':1080,'w:bottom':1080,'w:left':1000,'w:right':1000,'w:header':360,'w:footer':360})
         relationships='<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="'+R+'/styles" Target="styles.xml"/>'+''.join(f'<Relationship Id="{rid}" Type="{R}/image" Target="media/image{i}.png"/>' for i,(rid,_) in enumerate(images,1))+''.join(f'<Relationship Id="{rid}" Type="{R}/hyperlink" Target="{html.escape(url,quote=True)}" TargetMode="External"/>' for rid,url in external_links)+'</Relationships>'
-        styles=f'''<w:styles xmlns:w="{W}"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="22"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="276" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style><w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:rPr><w:sz w:val="40"/><w:b/><w:color w:val="12566C"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Subtitle"><w:name w:val="Subtitle"/><w:rPr><w:sz w:val="20"/><w:color w:val="52697A"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:pPr><w:keepNext/><w:spacing w:before="240" w:after="100"/></w:pPr><w:rPr><w:b/><w:sz w:val="28"/><w:color w:val="12566C"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:pPr><w:keepNext/></w:pPr><w:rPr><w:b/><w:sz w:val="24"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Caption"><w:name w:val="Caption"/><w:rPr><w:sz w:val="18"/><w:color w:val="455B6A"/></w:rPr></w:style><w:style w:type="table" w:styleId="TableGrid"><w:name w:val="Table Grid"/><w:tblPr><w:tblBorders>{''.join(f'<w:{x} w:val="single" w:sz="4" w:color="C6D3DA"/>' for x in ['top','left','bottom','right','insideH','insideV'])}</w:tblBorders></w:tblPr></w:style></w:styles>'''
+        styles=f'''<w:styles xmlns:w="{W}"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="21"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="276" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style><w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:rPr><w:sz w:val="40"/><w:b/><w:color w:val="12566C"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Subtitle"><w:name w:val="Subtitle"/><w:rPr><w:sz w:val="20"/><w:color w:val="52697A"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:pPr><w:keepNext/><w:spacing w:before="240" w:after="100"/></w:pPr><w:rPr><w:b/><w:sz w:val="28"/><w:color w:val="12566C"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:pPr><w:keepNext/></w:pPr><w:rPr><w:b/><w:sz w:val="24"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Caption"><w:name w:val="Caption"/><w:rPr><w:sz w:val="18"/><w:color w:val="455B6A"/></w:rPr></w:style><w:style w:type="table" w:styleId="TableGrid"><w:name w:val="Table Grid"/><w:tblPr><w:tblBorders>{''.join(f'<w:{x} w:val="single" w:sz="4" w:color="C6D3DA"/>' for x in ['top','left','bottom','right','insideH','insideV'])}</w:tblBorders></w:tblPr></w:style></w:styles>'''
         content_types='''<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>'''
         root_rels='<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="'+R+'/officeDocument" Target="word/document.xml"/></Relationships>'
         with zipfile.ZipFile(self.folder/'report.docx','w',zipfile.ZIP_DEFLATED) as archive:

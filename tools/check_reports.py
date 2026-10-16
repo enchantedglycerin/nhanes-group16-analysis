@@ -9,12 +9,99 @@ from xml.etree import ElementTree as ET
 import pymupdf
 from PIL import Image,ImageDraw
 from report_io import plain
+from bibliography import CITATION, CATALOG
 
 ROOT=Path(__file__).resolve().parents[1]
 
 def normalize(text):
     text=unicodedata.normalize('NFKC',text).replace('\u0e33','\u0e4d\u0e32')
     return re.sub(r'[\s\u200b\u00ad]+','',text)
+
+def check_reference_order(folder,blocks,urls):
+    used=json.loads((folder/'references_used.json').read_text(encoding='utf-8'))
+    assert used['style']=='Vancouver' and used['numbering']=='first appearance'
+    references=[b['text'] for b in blocks if b.get('style')=='reference']
+    order=[]
+    for block in blocks:
+        if block.get('style')=='reference':continue
+        for field in ['text','title','caption']:
+            for match in CITATION.finditer(block.get(field,'')):
+                for number in map(int,match.group(1).split(',')):
+                    if number not in order:order.append(number)
+    assert order==list(range(1,len(references)+1))
+    assert len(references)==len(used['references'])==len(set(urls))
+    for i,(entry,text,url) in enumerate(zip(used['references'],references,urls),1):
+        assert entry['number']==i and text.startswith(str(i)+'. ')
+        assert entry['url']==CATALOG[entry['key']]['url']==url
+        if entry['type']=='journal':
+            assert url=='https://doi.org/'+entry['doi'] and 'doi:'+entry['doi'] in text
+            assert ('et al.' in text)==(len(entry['authors'])>6)
+            for author in entry['authors'][:6]:assert author in text
+        else:assert '[Internet]. [cited 2026 Oct 16]. Available from:' in text
+
+
+def check_pdf_caption_positions(pdf,blocks):
+    table_boxes={}
+    for block in blocks:
+        if block['type'] not in ['figure','table']:continue
+        label=block['caption'].split('. ',1)[0]+'.' if block['type']=='figure' else block['title']
+        matches=[(page,page.search_for(label)) for page in pdf if page.search_for(label)]
+        assert len(matches)==1,('Caption not uniquely located',label)
+        page,areas=matches[0]
+        if block['type']=='figure':
+            top=min(area.y0 for area in areas)
+            images=[pymupdf.Rect(image['bbox']) for image in page.get_image_info()]
+            candidates=[box for box in images if box.y1<=top]
+            assert candidates and 0<=top-max(box.y1 for box in candidates)<30,('Caption below image',label)
+            box=max(candidates,key=lambda value:value.y1)
+            assert abs(box.width-493)<.1 and abs(box.height-296)<.1
+        else:
+            bottom=max(area.y1 for area in areas)
+            if page.number not in table_boxes:
+                table_boxes[page.number]=[pymupdf.Rect(table.bbox) for table in page.find_tables().tables
+                                          if table.col_count>=2 and table.row_count>=2 and table.bbox[2]-table.bbox[0]>400]
+            candidates=[box for box in table_boxes[page.number] if box.y0>=bottom]
+            assert candidates and 0<=min(box.y0 for box in candidates)-bottom<30,('Caption above table',label)
+
+
+def check_figure_fonts(folder):
+    layout=json.loads((folder/'figures/figure_layout.json').read_text(encoding='utf-8'))
+    assert len(layout)==4
+    for record in layout:
+        assert record['internal_title']=='' and record['axis_label_pt']==10 and record['tick_label_pt']==9.5
+        path=folder/'figures'/record['vector_file']
+        with pymupdf.open(path) as vector:
+            assert len(vector)==1
+            page=vector[0]
+            assert abs(page.rect.width-493)<.1 and abs(page.rect.height-296)<.1
+            spans=[span for block in page.get_text('dict')['blocks'] if block['type']==0
+                   for line in block['lines'] for span in line['spans']]
+            for label in [record['x_label'],record['y_label']]:
+                labels=[span for span in spans if normalize(span['text'])==normalize(label)]
+                assert labels and all(abs(span['size']-10)<.05 for span in labels),('Axis font',path,label)
+            assert any(abs(span['size']-9.5)<.05 for span in spans)
+            assert all(span['size']<=10.05 for span in spans)
+
+
+def check_word_caption_positions(doc,styles,blocks):
+    W='{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
+    WP='{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}'
+    body=list(doc.find(W+'body'))
+    text=lambda element:''.join(n.text or '' for n in element.iter(W+'t'))
+    tables=[b for b in blocks if b['type']=='table'];figures=[b for b in blocks if b['type']=='figure']
+    ti=fi=0
+    for i,element in enumerate(body):
+        if element.tag==W+'tbl':
+            assert text(body[i-1])==tables[ti]['title'] and body[i-1].find('.//'+W+'keepNext') is not None
+            ti+=1
+        if element.find('.//'+W+'drawing') is not None:
+            assert text(body[i+1])==figures[fi]['caption'] and element.find('.//'+W+'keepNext') is not None
+            extent=element.find('.//'+WP+'extent')
+            assert int(extent.attrib['cx'])==493*12700 and int(extent.attrib['cy'])==296*12700
+            fi+=1
+    assert ti==len(tables) and fi==4
+    size=styles.find('./'+W+'docDefaults/'+W+'rPrDefault/'+W+'rPr/'+W+'sz')
+    assert size.attrib[W+'val']=='21'
 
 def main():
     results=[]
@@ -56,6 +143,9 @@ def main():
         urls=[url for b in blocks if b.get('style')=='reference' for url in re.findall(r'\[ต้นฉบับ\]\((https?://[^)]+)\)',b['text'])]
         actual=[l['uri'] for p in pdf for l in p.get_links() if l['kind']==pymupdf.LINK_URI]
         assert actual==urls and len(urls)>6
+        check_reference_order(folder,blocks,urls)
+        check_pdf_caption_positions(pdf,blocks)
+        check_figure_fonts(folder)
         assert sum(len(p.get_images()) for p in pdf)==4
         assert 0<meta['main_word_count']<=2500 and meta['technical_terms_language']=='en'
         assert meta['authors']==names and not meta['student_ids_pending']
@@ -89,6 +179,7 @@ def main():
             rel=ET.fromstring(z.read('word/_rels/document.xml.rels'))
             assert [v.attrib['Target'] for v in rel if v.attrib.get('TargetMode')=='External']==urls
             assert b'Tahoma' in z.read('word/styles.xml') and b'th-TH' in z.read('word/styles.xml')
+            check_word_caption_positions(doc,ET.fromstring(z.read('word/styles.xml')),blocks)
         width,height=thumbs[0].size;columns=3;rows=(len(thumbs)+2)//3
         sheet=Image.new('RGB',(columns*(width+12)+12,rows*(height+34)+12),'#dce4e8');draw=ImageDraw.Draw(sheet)
         for i,im in enumerate(thumbs):
@@ -100,6 +191,9 @@ def main():
           'group_number':group_number,'document_status':'final','no_placeholders':True,
           'contribution_status':group['contribution_status'],
           'no_build_instructions_in_report':True,
+          'reference_style':'Vancouver','citations_in_first_appearance_order':True,
+          'table_captions_above_and_figure_captions_below':True,
+          'no_internal_graph_titles':True,'axis_label_pt':10,'tick_label_pt':9.5,'main_text_pt':10.5,
           'english_technical_terms':True,'result_sha256':hashlib.sha256((folder/'results.json').read_bytes()).hexdigest()})
         pdf.close()
     assert len(results)==3

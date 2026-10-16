@@ -50,6 +50,44 @@ def diag_arrays(internal,rows):
     return {'X':internal['X'],'model_y':internal['y'],'fit':internal['fitted'],
         'residual':internal['residual'],'participant_ids':np.array([int(x['participant_id']) for x in rows])}
 
+def assumptions(r,arrays,group_rows,pair_rows=None):
+    groups=list(r['groups'])
+    normality={f'{r["group_outcome"]}: {name}':S.jarque_bera(arrays[f'group_{i}'])
+               for i,name in enumerate(groups)}
+    normality['Primary-model residuals']=S.jarque_bera(arrays['residual'])
+    if 'spearman' in r:
+        pair_labels={1:['Sedentary time (h/day)','Pulse rate (bpm)'],
+                     3:['Arm circumference (cm)','Body weight (kg)']}[r['variant']]
+        normality.update({name+' (complete pairs)':S.jarque_bera(arrays[key])
+                          for name,key in zip(pair_labels,['x','y'])})
+    ids=[[int(row['participant_id']) for row in group_rows[name]] for name in groups]
+    group_ids=ids[0]+ids[1]
+    regression_ids=arrays['participant_ids'].tolist()
+    samples={
+        'Source dataset':{'records':len(ROWS),'unique_ids':len({row['participant_id'] for row in ROWS})},
+        'Group comparison':{'records':len(group_ids),'unique_ids':len(set(group_ids))},
+        'Primary regression':{'records':len(regression_ids),'unique_ids':len(set(regression_ids))},
+    }
+    if pair_rows is not None:
+        samples['Spearman complete pairs']={'records':len(pair_rows),
+            'unique_ids':len({row['participant_id'] for row in pair_rows})}
+    design_columns=[key for key in ROWS[0] if any(part in key.lower() for part in ['psu','strat','cluster','household'])]
+    r['assumptions']={
+        'normality_test':'Jarque-Bera; asymptotic chi-square with 2 df',
+        'normality':normality,
+        'group_variance_test':'Brown-Forsythe (median-centred Levene)',
+        'independence':{'samples':samples,'overlapping_group_ids':len(set(ids[0])&set(ids[1])),
+            'group_unique_ids':{name:len(set(values)) for name,values in zip(groups,ids)},
+            'available_cluster_or_stratum_columns':design_columns,
+            'survey_independence_verified':False,
+            'scope':'Unique records and disjoint groups support an unpaired analysis; household/PSU independence cannot be verified.'},
+        'method_selection':{'group_comparison':'Welch t-test: large-sample inference for a mean difference; no equal-variance assumption',
+            'bivariate_correlation':'Spearman only' if 'spearman' in r else 'Not part of the research questions',
+            'regression':'OLS with HC3: large-sample inference for a linear mean summary',
+            'normality_pretest_switching':False},
+    }
+
+
 def topcode_sensitivity(X,y,names,rows):
     keep=arr(rows,'age_years')<80
     model,inside=S.ols(X[keep],y[keep],names)
@@ -78,6 +116,8 @@ def pulse():
     r['quadratic_joint']=S.joint_test(r['quadratic'],quad,[7,8])
     r['age_under_80'],_=topcode_sensitivity(X,outcome,names,rows)
     arrays=diag_arrays(inside,rows);arrays.update(x=x,y=y,group_0=low,group_1=high)
+    assumptions(r,arrays,{name:[row for row,value in zip(pair,x) if (value<8)==(i==0)]
+                         for i,name in enumerate(r['groups'])},pair)
     save(r,arrays,[('Welch t-test',r['welch']['p']),('Spearman correlation',r['spearman']['p']),('Adjusted sedentary coefficient',r['adjusted']['coefficients'][1]['p'])])
 
 def haemoglobin():
@@ -105,6 +145,7 @@ def haemoglobin():
             r['age_sex_descriptive'][sex+' / '+band]=S.describe(arr(g,vars[0]))
     arrays=diag_arrays(inside,rows);arrays.update(x=arr(rows,'age_years'),y=y,sex=m,group_0=female,group_1=men,
           quadratic_beta=quad['beta'],quadratic_covariance=quad['covariance'])
+    assumptions(r,arrays,{sex:[row for row in rows if row['sex']==sex] for sex in r['groups']})
     save(r,arrays,[('Welch t-test',r['welch']['p']),('Joint age terms, robust Wald F',r['age_joint']['p']),('Age-by-sex interaction',r['adjusted']['coefficients'][3]['p'])])
 
 def arm():
@@ -126,6 +167,7 @@ def arm():
     r['quadratic_joint']=S.joint_test(r['quadratic'],quad,[5,6])
     r['age_under_80'],_=topcode_sensitivity(X,outcome,names,rows)
     arrays=diag_arrays(inside,rows);arrays.update(x=x,y=y,group_0=female,group_1=men)
+    assumptions(r,arrays,{sex:[row for row in group_rows if row['sex']==sex] for sex in r['groups']},pair)
     save(r,arrays,[('Welch t-test',r['welch']['p']),('Spearman correlation',r['spearman']['p']),('Adjusted arm coefficient',r['adjusted']['coefficients'][1]['p'])])
 
 if __name__=='__main__':

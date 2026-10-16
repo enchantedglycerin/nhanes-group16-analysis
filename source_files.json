@@ -3,14 +3,17 @@
   ".gitignore",
   "ANALYSIS_PLAN.md",
   "README.md",
+  "REFERENCE_AUDIT.md",
   "data/README.md",
   "group_members.json",
   "publish.ps1",
+  "references.json",
   "requirements-analysis.txt",
   "requirements.txt",
   "run.py",
   "source_files.json",
   "tools/analyze.py",
+  "tools/bibliography.py",
   "tools/build_reports.py",
   "tools/check_reports.py",
   "tools/data_utils.py",
@@ -23,4 +26,3 @@
   "tools/thai_report_io.py",
   "tools/verify_analysis.py"
 ]
-

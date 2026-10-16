@@ -33,7 +33,7 @@ def main():
     modules = ['numpy', 'mpmath']
     steps = ['analyze.py', 'verify_analysis.py']
     if not args.analysis_only:
-        modules += ['wx', 'pymupdf', 'PIL']
+        modules += ['matplotlib', 'pymupdf', 'PIL']
         if shutil.which('node') is None:
             raise SystemExit('Install Node.js with Intl.Segmenter support to build Thai reports.')
         font_dir = Path(os.environ.get('THAI_FONT_DIR', 'C:/Windows/Fonts'))

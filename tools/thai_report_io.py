@@ -176,9 +176,10 @@ class ThaiReport(Report):
         urls=[url for b in self.blocks if b.get('style')=='reference' for url in re.findall(r'\[ต้นฉบับ\]\((https?://[^)]+)\)',b['text'])]
         linked=0
         for i,page in enumerate(document):
-            if 'เอกสารอ้างอิง' in re.sub(r'[\s\u200b]+','',page.get_text()):
-                for area in page.search_for('ต้นฉบับ'):
-                    page.insert_link({'kind':pymupdf.LINK_URI,'from':area,'uri':urls[linked]});linked+=1
+            # Reference entries may continue beyond the page with their heading.
+            for area in page.search_for('ต้นฉบับ'):
+                assert linked<len(urls), ('Unexpected source-link label', i)
+                page.insert_link({'kind':pymupdf.LINK_URI,'from':area,'uri':urls[linked]});linked+=1
             page.draw_line((50,34),(rect.width-50,34),color=(.08,.34,.42),width=.7)
             page.insert_font(fontname='ThaiFooter',fontfile=str(FONT_DIR/'tahoma.ttf'))
             header=f'กลุ่มที่ {self.group_number} | Medical Data Analysis Using Python'
